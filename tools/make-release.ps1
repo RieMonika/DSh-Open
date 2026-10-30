@@ -51,15 +51,16 @@ $bad = @()
 $zipObj = [System.IO.Compression.ZipFile]::OpenRead($zip)
 try {
     foreach ($e in $zipObj.Entries) {
-        if ($e.FullName -match '^(DShOpen/)?(data|cache)/') { $bad += $e.FullName }
+        if ($e.FullName -match '^(DShOpen[/\\])?(data|cache)[/\\]') { $bad += $e.FullName }
     }
 } finally { $zipObj.Dispose() }
 if ($bad.Count) { throw ('发布包里混进了不该带的目录：' + ($bad -join ', ')) }
 
 $leak = @()
-Get-ChildItem $Stage -Recurse -File | Where-Object { $_.Extension -in '.js', '.json', '.md', '.txt', '.bat', '.html', '.ps1' } | ForEach-Object {
     $userRoot = 'C:' + '\' + 'Users' + '\'
-    $hit = Select-String -LiteralPath $_.FullName -Pattern $userRoot -SimpleMatch -ErrorAction SilentlyContinue
+    $appData  = '\' + 'App' + 'Data' + '\'
+Get-ChildItem $Stage -Recurse -File | Where-Object { $_.Extension -in '.js', '.json', '.md', '.txt', '.bat', '.html', '.ps1' } | ForEach-Object {
+    $hit = Select-String -LiteralPath $_.FullName -Pattern $userRoot, $appData -SimpleMatch -ErrorAction SilentlyContinue
     if ($hit) { $leak += $_.FullName }
 }
 if ($leak.Count) { throw ('发布包里发现本机路径：' + ($leak -join ', ')) }
