@@ -8,8 +8,11 @@ const db = require('./db');
 const settings = require('./settings');
 const log = require('./logger');
 
+const PROVIDERS = ['siliconflow', 'zhipu', 'dashscope', 'moonshot', 'openai', 'custom'];
+
 const DEFAULTS = {
   enabled: false,
+  provider: '',
   baseUrl: '',
   apiKey: '',
   model: '',
@@ -45,8 +48,10 @@ function cfg() {
     // 大多数兼容接口都在 /v1 下面，用户懒得写就补上
     if (!/\/v\d+$/i.test(baseUrl)) baseUrl += '/v1';
   }
+  const provider = String(pick('provider') || '').trim();
   return {
     enabled: pick('enabled') === true,
+    provider: PROVIDERS.includes(provider) ? provider : '',
     baseUrl,
     rawBaseUrl: String(pick('baseUrl') || '').trim(),
     apiKey: String(pick('apiKey') || '').trim(),
@@ -60,6 +65,10 @@ function save(patch) {
   const cur = { ...DEFAULTS, ...(settings.getIn('model.vision') || {}) };
   const p = patch || {};
   if ('enabled' in p) cur.enabled = !!p.enabled;
+  if ('provider' in p) {
+    const provider = String(p.provider || '').trim();
+    cur.provider = PROVIDERS.includes(provider) ? provider : 'custom';
+  }
   if ('baseUrl' in p) cur.baseUrl = String(p.baseUrl || '').trim();
   if ('apiKey' in p) cur.apiKey = String(p.apiKey || '').trim();
   if ('model' in p) cur.model = String(p.model || '').trim();

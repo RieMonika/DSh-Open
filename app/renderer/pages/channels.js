@@ -413,19 +413,99 @@
       root.appendChild(auto);
 
       // ================= 看图（视觉 API） =================
+      // 先选服务商，只显示要填的东西；模型给常用预设，选「其他」才手填。
       const vis = (await dsh.vision.config()) || {};
+      const CUSTOM = '__custom__';
+      const VPROV = {
+        siliconflow: {
+          label: '硅基流动 SiliconFlow',
+          baseUrl: 'https://api.siliconflow.cn/v1',
+          models: [
+            'Qwen/Qwen2.5-VL-72B-Instruct',
+            'Qwen/Qwen2.5-VL-32B-Instruct',
+            'Qwen/Qwen2-VL-72B-Instruct',
+          ],
+          keyHint: '控制台 → API 密钥，形如 sk-…',
+        },
+        zhipu: {
+          label: '智谱 GLM（GLM-4V）',
+          baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+          models: ['glm-4v-flash', 'glm-4v-plus', 'glm-4v'],
+          keyHint: 'API Keys 页面，形如 xxxx.yyyy',
+        },
+        dashscope: {
+          label: '通义千问（DashScope）',
+          baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+          models: ['qwen-vl-max', 'qwen-vl-plus', 'qwen2.5-vl-72b-instruct'],
+          keyHint: '百炼控制台 → API-KEY，形如 sk-…',
+        },
+        moonshot: {
+          label: '月之暗面 Moonshot',
+          baseUrl: 'https://api.moonshot.cn/v1',
+          models: ['moonshot-v1-8k-vision-preview', 'moonshot-v1-32k-vision-preview'],
+          keyHint: '控制台 → API Key，形如 sk-…',
+        },
+        openai: {
+          label: 'OpenAI',
+          baseUrl: 'https://api.openai.com/v1',
+          models: ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1-mini'],
+          keyHint: 'platform.openai.com → API keys',
+        },
+        custom: {
+          label: '自定义（任何 OpenAI 兼容接口）',
+          baseUrl: '',
+          models: [],
+          keyHint: '按你自己服务的要求填',
+        },
+      };
+
+      const vrowV = (title, desc, ctrl, stack) =>
+        h(
+          'div',
+          { class: 'row' + (stack ? ' row-stack' : '') },
+          h(
+            'div',
+            { class: 'row-main' },
+            h('div', { class: 'row-title', text: title }),
+            h('div', { class: 'row-desc', text: desc }),
+          ),
+          h('div', { class: 'row-ctrl' }, ctrl),
+        );
+
       const vSwitch = h('label', { class: 'switch' }, h('input', { type: 'checkbox' }), h('span', { class: 'track' }));
-  vSwitch.querySelector('input').checked = !!vis.enabled;
+      vSwitch.querySelector('input').checked = !!vis.enabled;
+
+      const vProv = h(
+        'select',
+        { class: 'input', style: 'width: 300px;' },
+        ...Object.keys(VPROV).map((k) => h('option', { value: k, text: VPROV[k].label })),
+      );
+      // 老配置里没有 provider 字段：配过 key / 模型就按地址反推，没配过就默认给个能直接用的预设
+      const guessProvider = () => {
+        if (VPROV[vis.provider]) return vis.provider;
+        const configured = !!(vis.apiKey || vis.model);
+        const base = String(vis.rawBaseUrl || vis.baseUrl || '').toLowerCase();
+        if (configured && base) {
+          for (const k of Object.keys(VPROV)) {
+            const b = String(VPROV[k].baseUrl || '').toLowerCase();
+            if (b && base.startsWith(b.replace(/\/v1$/, ''))) return k;
+          }
+        }
+        return configured ? 'custom' : 'siliconflow';
+      };
+      vProv.value = guessProvider();
+
       const vBase = h('input', {
         class: 'input input-wide',
         placeholder: 'https://api.xxx.com/v1',
-        value: vis.baseUrl || '',
+        value: vis.rawBaseUrl || vis.baseUrl || '',
         autocomplete: 'off',
       });
+      const vModelSel = h('select', { class: 'input', style: 'width: 320px;' });
       const vModel = h('input', {
         class: 'input input-wide',
-        placeholder: '例如 gpt-4o-mini / Qwen/Qwen2.5-VL-72B-Instruct / glm-4v-flash',
-        value: vis.model || '',
+        placeholder: '模型名，例如 Qwen/Qwen2.5-VL-72B-Instruct',
+        value: '',
         autocomplete: 'off',
       });
       const vKey = h('input', {
@@ -435,17 +515,72 @@
         value: vis.apiKey || '',
         autocomplete: 'off',
       });
-      const vOut = h('div', { class: 'path-box path-box-multi', text: vis.baseUrl && vis.model ? '已配置：' + vis.model : '还没配置。填好地址、模型、Key，点「测一发」看看通不通。' });
+      const vKeyHint = h('div', { class: 'row-hint' });
+      const visBadge = h('span', { class: 'badge' });
+      const visState = h('div', { class: 'row-hint' });
+      const vOut = h('div', {
+        class: 'path-box path-box-multi',
+        text: '还没试过。选好服务商、填上密钥，点「测一发」看看通不通。',
+      });
+      const vModelRow = vrowV('模型', '必须支持图片输入；文字模型塞图进去会报 400。', h('div', { style: 'display:flex;gap:8px;align-items:center;' }, vModelSel, vModel), true);
+
+      const visReady = (c) => !!(c && c.enabled && c.baseUrl && c.model);
+      function paintBadge(c) {
+        const ok = visReady(c);
+        visBadge.className = 'badge' + (ok ? ' badge-ok' : '');
+        visBadge.textContent = ok ? '已配置' : '未配置';
+        if (ok) {
+          visState.textContent =
+            '已配置：' + (VPROV[c.provider] ? VPROV[c.provider].label : '自定义') + ' · ' + c.model + '（发图' + (c.enabled ? '开着' : '关着') + '）';
+        } else {
+          visState.textContent = '还没配置：选一家、填上密钥就行。';
+        }
+      }
+
+      function paintModels(provider, keep) {
+        const p = VPROV[provider];
+        vModelSel.textContent = '';
+        p.models.forEach((m) => vModelSel.appendChild(h('option', { value: m, text: m })));
+        vModelSel.appendChild(h('option', { value: CUSTOM, text: '其他（自己填模型名）' }));
+        const want = keep && (p.models.includes(keep) || keep === CUSTOM) ? keep : p.models[0] || CUSTOM;
+        vModelSel.value = want;
+        vModel.hidden = want !== CUSTOM;
+        if (want === CUSTOM) vModel.value = keep || vModel.value || '';
+      }
+
+      const currentModel = () => (vModelSel.value === CUSTOM ? vModel.value.trim() : vModelSel.value);
+
+      function useProvider(key, keepModel) {
+        const p = VPROV[key] || VPROV.custom;
+        vProv.value = key;
+        vBase.value = p.baseUrl || '';
+        vKeyHint.textContent = '去哪拿：' + p.keyHint;
+        paintModels(key, keepModel);
+      }
+
+      useProvider(vProv.value, vis.model);
+      paintBadge(vis);
+
+      vProv.addEventListener('change', () => {
+        useProvider(vProv.value, '');
+        paintBadge({ enabled: vSwitch.querySelector('input').checked, baseUrl: vBase.value, model: currentModel(), provider: vProv.value });
+      });
+      vModelSel.addEventListener('change', () => {
+        vModel.hidden = vModelSel.value !== CUSTOM;
+        if (!vModel.hidden) vModel.focus();
+      });
 
       const visSave = async () => {
         try {
           const next = await dsh.vision.save({
             enabled: vSwitch.querySelector('input').checked,
+            provider: vProv.value,
             baseUrl: vBase.value,
-            model: vModel.value,
+            model: currentModel(),
             apiKey: vKey.value,
           });
-          vOut.textContent = next.baseUrl && next.model ? '已保存：' + next.model : '已保存，但地址或模型还空着';
+          paintBadge(next);
+          vOut.textContent = visReady(next) ? '已保存：' + next.model : '已保存，但还差一点东西（看下面那行状态）';
           toast('视觉 API 设置已保存');
         } catch (err) {
           toast(String(err.message || err), true);
@@ -457,12 +592,7 @@
         vOut.dataset.busy = '1';
         vOut.textContent = '正在试……';
         try {
-          await dsh.vision.save({
-            enabled: vSwitch.querySelector('input').checked,
-            baseUrl: vBase.value,
-            model: vModel.value,
-            apiKey: vKey.value,
-          });
+          await visSave();
           const r = await dsh.vision.test();
           vOut.textContent = r.ok
             ? '通了：模型回答「' + (r.text || '（空）').slice(0, 60) + '」' + SP.g3 + 'tokens ' + (r.prompt + r.completion)
@@ -484,10 +614,14 @@
             'div',
             null,
             h('div', { class: 'section-title', text: '看图（视觉 API）' }),
-            h('div', { class: 'section-desc', text: '她收到图片时用它「看」图。任何 OpenAI 兼容的看图接口都行，随时换，不锁死一家。' }),
+            h('div', { class: 'section-desc', text: '她收到图片时用它「看」图。先选一家，只填这一家要填的；任何 OpenAI 兼容的看图接口都能接。' }),
           ),
-          h('div', { class: 'section-tools' }, h('span', { class: 'badge' + (vis.enabled && vis.baseUrl && vis.model ? ' badge-ok' : ''), text: vis.enabled && vis.baseUrl && vis.model ? '已配置' : '未配置' })),
+          h('div', { class: 'section-tools' }, visBadge),
         ),
+        vrowV('视觉服务商', '换一家只改这一组，别家的值各存各的。', vProv, false),
+        vrowV('接口地址', '一般按预设填好，换自建服务时才改；填到 /v1 就行。', vBase, true),
+        vModelRow,
+        vrowV('API Key', '只存在本机设置里，不外发。', h('div', { style: 'display:flex;flex-direction:column;gap:6px;' }, vKey, vKeyHint), true),
         h(
           'div',
           { class: 'row' },
@@ -496,30 +630,13 @@
         ),
         h(
           'div',
-          { class: 'row' },
-          h('div', { class: 'row-main' }, h('div', { class: 'row-title', text: '接口地址' }), h('div', { class: 'row-desc', text: '填到 /v1 就行，脚本自己补 /chat/completions。也可以直接填完整的 /chat/completions 地址。' })),
-          h('div', { class: 'row-ctrl' }, vBase),
-        ),
-        h(
-          'div',
-          { class: 'row' },
-          h('div', { class: 'row-main' }, h('div', { class: 'row-title', text: '模型名' }), h('div', { class: 'row-desc', text: '必须支持图片输入；文字模型塞图进去会报 400。' })),
-          h('div', { class: 'row-ctrl' }, vModel),
-        ),
-        h(
-          'div',
-          { class: 'row' },
-          h('div', { class: 'row-main' }, h('div', { class: 'row-title', text: 'API Key' }), h('div', { class: 'row-desc', text: '只存在本机设置里；换一家就把这三样一起换掉。' })),
-          h('div', { class: 'row-ctrl' }, vKey),
-        ),
-        h(
-          'div',
           { class: 'row-actions' },
           h('button', { class: 'btn btn-primary', type: 'button', text: '保存', onClick: visSave }),
           h('button', { class: 'btn', type: 'button', text: '测一发', onClick: visTest }),
         ),
         vOut,
-        h('div', { class: 'row-hint', text: '兼容示例：OpenAI、硅基流动、智谱 GLM-4V、通义千问 VL、Moonshot 视觉、本地 LM Studio / Ollama 的 OpenAI 兼容端点。' }),
+        visState,
+        h('div', { class: 'row-hint', text: '内置服务商只是现成预设；本地 LM Studio / Ollama、公司内网等其他兼容端点选「自定义」填地址即可。' }),
       );
       root.appendChild(visSection);
 
