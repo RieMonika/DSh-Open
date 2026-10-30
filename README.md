@@ -61,7 +61,7 @@
 ```
 app\            源码（主进程 core\、界面 renderer\、资源 assets\）
 plugins\        自带插件（B 站操作、QQ 身份）
-tools\          构建脚本、exe 图标注入、运行时下载
+tools\          构建脚本、exe 图标注入、运行时下载、泄露检查（check-leaks.ps1）
 docs\           架构说明、记忆系统设计稿
 构建.bat         构建（同步源码 + 图标 + 快捷方式）
 启动.bat         启动
@@ -1036,6 +1036,16 @@ NapCat（负责跟腾讯说话） ── ws://127.0.0.1:3001 ──> DSh Open（
 - 用模型自动回消息（要等收件箱和发送流程打通，M3 的后半段）。
 - B 站通道（M5）。
 
+## 这个仓库不会带出你本机的东西
+
+源码里带的是通用写法，不带任何人的账号、路径、聊天记录。为了防止以后改回去，仓库里有两道自动闸门：
+
+- **提交前**：`.githooks/pre-commit` 调 `tools\check-leaks.ps1` 扫一遍要提交的文件，命中就不让提交。clone 下来跑一次 `powershell -File tools\setup-hooks.ps1` 就能启用（或者直接 `git config core.hooksPath .githooks`）
+- **推送后**：`.github/workflows/leak-guard.yml` 在 GitHub 上再扫一遍，网页直接改文件也拦得住
+
+两边查的是同一类东西：`C:\Users` 下面那种个人目录、私人邮箱、手机号、像密钥的长串、`~/.dsh` 这类私有目录、以及软件目录之外的绝对路径。想加自己的敏感词，就写进 `cache\private-banlist.txt`（一行一个，这个文件在 `.gitignore` 里，永远不会被提交）。
+
+示例里的号码一律用 `10001`、`12345678` 这种明显是占位的东西。
 ## 许可
 
 MIT，见 [LICENSE](LICENSE)。

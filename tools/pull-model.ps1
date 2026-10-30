@@ -1,13 +1,17 @@
-# Pull an Ollama model directly via curl (IPv4), bypassing ollama's own downloader
+﻿# Pull an Ollama model directly via curl (IPv4), bypassing ollama's own downloader
 # which hangs on this machine because Cloudflare R2 is reached over broken IPv6.
-# Usage: & 'D:\DSh Open\tools\pull-model.ps1' -Model "qwen2.5:7b"
+# Usage: powershell -File tools\pull-model.ps1 -Model "qwen2.5:7b" -ModelsDir <你的 Ollama models 目录>
 param(
   [Parameter(Mandatory = $true)][string]$Model,
   [string]$Registry = 'registry.ollama.ai',
-  [string]$ModelsDir = 'D:\Ollama\models'
+  [string]$ModelsDir = ''
 )
 
 $ErrorActionPreference = 'Stop'
+
+if (-not $ModelsDir) {
+  $ModelsDir = if ($env:OLLAMA_MODELS) { $env:OLLAMA_MODELS } else { Join-Path $env:USERPROFILE '.ollama\models' }
+}
 
 if ($Model -match ':') { $name = $Model.Split(':')[0]; $tag = $Model.Split(':')[1] }
 else { $name = $Model; $tag = 'latest' }

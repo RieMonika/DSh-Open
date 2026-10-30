@@ -1,0 +1,23 @@
+#!/bin/sh
+# 提交前闸门：扫一遍要提交的内容，命中任何本机信息就不让提交。
+# 启用一次即可：git config core.hooksPath .githooks
+# 想加自己的敏感词：写进 cache/private-banlist.txt（一行一个，这个文件不进仓库）
+
+set -e
+
+ROOT=$(git rev-parse --show-toplevel)
+cd "$ROOT"
+
+PS=$(command -v powershell.exe || command -v pwsh || true)
+if [ -z "$PS" ]; then
+  echo "check-leaks: 没找到 powershell，跳过检查（Windows 上应该都有）" >&2
+  exit 0
+fi
+
+BAN=""
+if [ -f "cache/private-banlist.txt" ]; then
+  BAN="-Banlist cache/private-banlist.txt"
+fi
+
+# shellcheck disable=SC2086
+"$PS" -NoProfile -ExecutionPolicy Bypass -File "tools/check-leaks.ps1" -Staged $BAN

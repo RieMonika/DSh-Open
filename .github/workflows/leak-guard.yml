@@ -1,0 +1,54 @@
+name: leak-guard
+
+# 每次 push / PR 都在 GitHub 那边再扫一遍：万一本地钩子没启用，或者直接网页上改了文件，
+# 这里会把本机路径、私人邮箱、手机号、密钥、很长的 QQ 号之类的东西拦下来。
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan tracked files
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $self = '^(tools/check-leaks\.ps1|\.github/workflows/leak-guard\.yml)$'
+          $files = git ls-files | Where-Object {
+            $_ -and $_ -notmatch '^app/node_modules/' -and $_ -notmatch $self -and $_ -match '\.(md|js|mjs|cjs|jsx|ts|tsx|json|html|css|scss|txt|bat|cmd|ps1|nsi|nsh|yml|yaml|toml|ini|cfg|sh)$'
+          }
+          $allow = @('1122334455', '123456789', '987654321', '12345678', '10001', '61920', '11434')
+          $rules = [ordered]@{
+            'Windows user path' = '[A-Za-z]:\\+Users\\+[^\\\s]+'
+            'Personal email'    = '(?i)[A-Za-z0-9._%+-]+@(qq|163|126|sina|gmail|outlook|foxmail|hotmail|yeah)\.(com|net|cn)'
+            'Phone number'      = '(?<!\d)1[3-9]\d{9}(?!\d)'
+            'QQ number'         = '(?i)(qq\s*号|管理员\s*qq\s*[:：=]?\s*)([1-9]\d{4,11})'
+            'Secret-like token' = '(sk-[A-Za-z0-9]{12,}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|Bearer\s+[A-Za-z0-9._-]{25,})'
+            'Private folder'    = '(?i)(\\\\\.dsh\\\\|/\.dsh/|plugin-src)'
+            'Local abs path'    = '(?i)(?<![A-Za-z0-9_])[A-Z]:\\+(?!DSh Open|NapCat|图片|Users)[A-Za-z0-9_\u4e00-\u9fa5 .-]{2,}'
+          }
+          $hits = New-Object System.Collections.ArrayList
+          foreach ($f in $files) {
+            $lines = [System.IO.File]::ReadAllLines((Resolve-Path -LiteralPath $f), [System.Text.Encoding]::UTF8)
+            for ($i = 0; $i -lt $lines.Count; $i++) {
+              foreach ($name in $rules.Keys) {
+                foreach ($m in [regex]::Matches($lines[$i], $rules[$name])) {
+                  $val = $m.Groups[$m.Groups.Count - 1].Value
+                  if ($allow -contains $val) { continue }
+                  [void]$hits.Add(($name + ' | ' + $f + ':' + ($i + 1) + ' | ' + $m.Value.Trim()))
+                }
+              }
+            }
+          }
+          if ($hits.Count -gt 0) {
+            $hits | Select-Object -First 50 | ForEach-Object { Write-Host "::error::$_" }
+            throw ("发现 " + $hits.Count + " 处可能泄露的本机信息，请改成通用写法。")
+          }
+          Write-Host ("leak-guard: 干净（查了 " + $files.Count + " 个文件）")
