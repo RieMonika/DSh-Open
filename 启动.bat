@@ -1,5 +1,6 @@
 @echo off
-chcp 65001 >nul
-rem 清理掉可能被外部环境注入的 ELECTRON_RUN_AS_NODE，避免 Electron 被当成 Node 跑
+rem Clear ELECTRON_RUN_AS_NODE so the app starts as Electron, not as Node.
+rem Clear DSH_OPEN_DEBUG if an earlier debug launcher exported it.
 set "ELECTRON_RUN_AS_NODE="
+set "DSH_OPEN_DEBUG="
 start "" "%~dp0runtime\DShOpen.exe"

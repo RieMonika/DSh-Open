@@ -41,9 +41,9 @@
   // 状态行是拼出来的：「已配置：硅基流动 SiliconFlow · Qwen/… （发图开着）」
   dict.RULES.push([
     /^已配置：(.+?) · (.+?)（发图(开着|关着)）$/,
-    (m) => `Configured: ${m[1]} · ${m[2]} (image input ${m[3] === '开着' ? 'on' : 'off'})`,
+    (m, prov, model, state) => `Configured: ${prov} · ${model} (image input ${state === '开着' ? 'on' : 'off'})`,
   ]);
-  dict.RULES.push([/^去哪拿：(.+)$/, (m) => `Where: ${m[1]}`]);
+  dict.RULES.push([/^去哪拿：(.+)$/, 'Where: $1']);
 
   if (window.EN && window.EN.refresh) window.EN.refresh();
 })();
