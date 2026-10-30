@@ -1,0 +1,151 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; user-select: none; cursor: grab; }
+  body.dragging { cursor: grabbing; }
+  body.dragging video { filter: drop-shadow(0 6px 14px rgba(0,0,0,.35)) drop-shadow(0 0 9px rgba(126,196,255,.85)); }
+  #stage { width: 100vw; height: 100vh; display: flex; align-items: flex-end; justify-content: center; }
+  video { max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 6px 14px rgba(0,0,0,.35)); pointer-events: none;
+          transition: filter .12s ease, transform .12s ease; }
+  /* 按住那一瞬间给点反馈：微微缩一下 + 一圈很淡的蓝光，告诉她「按到了，先别动」 */
+  body.pressing video { transform: scale(.985); filter: drop-shadow(0 6px 14px rgba(0,0,0,.35)) drop-shadow(0 0 5px rgba(126,196,255,.45)); }
+  .bubble { position: absolute; left: 50%; bottom: 58%; transform: translateX(-50%) scale(.9);
+            max-width: 88%; padding: 5px 10px; border-radius: 10px; background: rgba(24,30,42,.92);
+            color: #eaf0ff; font: 12px/1.4 "Microsoft YaHei", sans-serif; white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(0,0,0,.35); opacity: 0; transition: all .18s ease; pointer-events: none; }
+  .bubble.on { opacity: 1; transform: translateX(-50%) scale(1); }
+  .bubble::after { content: ''; position: absolute; left: 50%; bottom: -5px; width: 9px; height: 9px;
+                   margin-left: -5px; background: rgba(24,30,42,.92); transform: rotate(45deg); }
+  .bubble.on { opacity: 1; transform: translateX(-50%) scale(1); }
+</style>
+</head>
+<body>
+  <div id="stage"><video id="v" autoplay muted playsinline></video></div>
+  <div class="bubble" id="b"></div>
+<script>
+  const q = new URLSearchParams(location.search);
+  const dir = q.get('dir') || '';
+  let list = []; try { list = JSON.parse(q.get('list') || '[]'); } catch (e) {}
+  const IDLE = (q.get('idle') || '').split('|').filter(Boolean);
+  const HAPPY = (q.get('happy') || '').split('|').filter(Boolean);
+  const v = document.getElementById('v'), b = document.getElementById('b');
+  const url = (n) => 'file:///' + encodeURI(dir.replace(/\\/g, '/') + '/' + n);
+  const pick = (a) => a[Math.floor(Math.random() * a.length)];
+  let idleTimer = null;
+  function play(n, loop) { if (!n) return; v.loop = !!loop; v.src = url(n); v.play().catch(() => {}); }
+  function idle() { play(pick(IDLE.length ? IDLE : list), true); }
+  function react() {
+    play(pick(HAPPY.length ? HAPPY : list), false);
+    say(pick(['唔？', '别戳我啦', '在的在的', '主人~', '嘿嘿', '今天也要加油哦']));
+  }
+  let bt = 0;
+  function say(t) { b.textContent = t; b.classList.add('on'); clearTimeout(bt); bt = setTimeout(() => b.classList.remove('on'), 1800); }
+  // 「按住不放再拖我~」这种提醒别刷屏：8 秒内最多一次
+  let hintAt = 0;
+  function hintHold() {
+    const now = Date.now();
+    if (now - hintAt < 8000) return;
+    hintAt = now;
+    say(pick(['按住不放再拖我~', '按住别松手，就能拖走我啦']));
+  }
+  v.addEventListener('ended', () => { if (!v.loop) setTimeout(idle, 350); });
+
+  // 长按左键才拖：按住 280ms 不动 → 「抓住」（一圈淡蓝光 + 抓手指针），之后鼠标怎么移都跟手；
+  // 抓住之前手一动超过 14px 就取消长按（防误碰）；短按（<280ms 且没动）才算戳她。
+  // 按下那一瞬先给个「按到了」的反馈（微缩 + 淡蓝），不然用户不知道要等。
+  const HOLD_MS = 280;
+  const TOL = 14;
+  let down = false;
+  let armed = false;
+  let moved = 0;
+  let lx = 0;
+  let ly = 0;
+  let holdTimer = 0;
+  let lastAt = 0;
+
+  function disarm() {
+    const wasDown = down;
+    down = false;
+    armed = false;
+    moved = 0;
+    clearTimeout(holdTimer);
+    holdTimer = 0;
+    document.body.classList.remove('dragging');
+    document.body.classList.remove('pressing');
+    if (wasDown) window.petWin && window.petWin.hold && window.petWin.hold(false);
+    window.petWin && window.petWin.dragEnd && window.petWin.dragEnd();
+  }
+
+  window.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || down) return;
+    down = true;
+    armed = false;
+    moved = 0;
+    lx = e.screenX;
+    ly = e.screenY;
+    lastAt = Date.now();
+    window.petWin && window.petWin.hold && window.petWin.hold(true);   // 按住期间关掉「点穿」，拖再快也不丢事件
+    document.body.classList.add('pressing');                          // 按下就有反馈：她微微缩一下、泛一点蓝
+    try { e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId); } catch (_) {}
+    clearTimeout(holdTimer);
+    holdTimer = setTimeout(() => {
+      if (!down || armed) return;
+      armed = true;
+      document.body.classList.remove('pressing');
+      document.body.classList.add('dragging');
+      window.petWin && window.petWin.dragStart && window.petWin.dragStart();
+    }, HOLD_MS);
+  });
+
+  window.addEventListener('pointermove', (e) => {
+    if (!down) return;
+    lastAt = Date.now();
+    if (!(e.buttons & 1)) return disarm();               // 在窗口外松了手（没收到 pointerup）→ 收尾
+    const dx = e.screenX - lx;
+    const dy = e.screenY - ly;
+    lx = e.screenX;
+    ly = e.screenY;
+    if (!armed) {
+      moved += Math.abs(dx) + Math.abs(dy);
+      if (moved > TOL) clearTimeout(holdTimer);   // 还没按住就开始乱动 → 这次不算长按
+      return;
+    }
+    if (dx || dy) window.petWin && window.petWin.dragMove && window.petWin.dragMove();
+  });
+
+  window.addEventListener('pointerup', () => {
+    if (!down) return;
+    const wasArmed = armed;
+    const wasMoved = moved;
+    disarm();
+    if (wasArmed) return;
+    if (wasMoved <= TOL) react();                  // 短按 = 戳她
+    else hintHold();                               // 想直接拖 → 提醒她要按住不放
+  });
+  window.addEventListener('pointercancel', disarm);
+  window.addEventListener('pointerleave', () => { if (down && !armed) disarm(); });  // 还没抓住就跑出窗口 = 取消
+  window.addEventListener('blur', () => { if (!down) disarm(); });
+
+  // 兜底：一直「按着」却半天没有任何事件（窗口被别的置顶窗挡住之类）→ 收尾，别把她卡死。
+  // 已经抓住她（armed）时放宽到 8 秒：抓住以后停在那儿想想放哪，不该被当成卡死。
+  setInterval(() => {
+    if (!down) return;
+    if (Date.now() - lastAt > (armed ? 8000 : 2500)) disarm();
+  }, 700);
+
+  window.petWin && window.petWin.onSay && window.petWin.onSay(react);
+  window.addEventListener('contextmenu', (e) => { e.preventDefault(); window.petWin && window.petWin.menu(); });
+
+  let idleAt = Date.now();
+  setInterval(() => {
+    if (Date.now() - idleAt > (25000 + Math.random() * 20000)) {
+      idleAt = Date.now();
+      if (Math.random() < 0.6) play(pick(list), false); else idle();
+    }
+  }, 4000);
+  idle();
+</script>
+</body>
+</html>

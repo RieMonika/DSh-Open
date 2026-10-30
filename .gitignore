@@ -1,0 +1,31 @@
+# 运行时与用户数据不进仓库
+runtime/
+data/
+cache/
+backups/
+
+# 大二进制 / 本机工具
+tools/ffmpeg.exe
+tools/_preview128.png
+
+# 内部文档与截图（含本机信息）
+docs/交接-给新会话.md
+docs/预览-*.png
+
+# 杂项
+*.log
+*.tmp
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# 构建产物
+*.zip
+
+# 桌面宠物原生实验工程（自带 electron 运行时，太大）
+pet-native/
+
+
+# 安装器（本地实验，暂时不进仓库）
+installer/
+tools/build-release.ps1

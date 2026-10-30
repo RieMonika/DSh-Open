@@ -1,0 +1,10 @@
+{
+  "id": "bili-actions",
+  "name": "B站 操作",
+  "version": "0.1.0",
+  "description": "让她能关注/拉黑 UP 主、改自己的名字和简介、给视频点赞投币（举报视接口情况）。谁能指挥她，由这个插件里的白名单决定。",
+  "author": "DSh Open",
+  "permission": "channel",
+  "enabledByDefault": true,
+  "main": "index.js"
+}

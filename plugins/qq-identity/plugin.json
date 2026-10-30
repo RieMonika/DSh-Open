@@ -1,0 +1,10 @@
+{
+  "id": "qq-identity",
+  "name": "QQ 身份",
+  "version": "0.1.0",
+  "description": "让她能改自己的 QQ 头像、昵称、签名，还能发 QQ 空间。谁能指挥她，由这个插件里的白名单决定。",
+  "author": "DSh Open",
+  "permission": "channel",
+  "enabledByDefault": true,
+  "main": "index.js"
+}

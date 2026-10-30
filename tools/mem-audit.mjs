@@ -1,0 +1,12 @@
+﻿import { DatabaseSync } from 'node:sqlite';
+const db = new DatabaseSync('D:/DSh Open/data/dsh-open.db');
+const q = (s) => db.prepare(s).all();
+console.log('memories total', q('SELECT COUNT(*) n FROM memories')[0].n);
+console.log('with tags', q("SELECT COUNT(*) n FROM memories WHERE tags IS NOT NULL AND tags != ''")[0].n);
+console.log('avg len', q('SELECT ROUND(AVG(LENGTH(text)),1) a FROM memories')[0].a);
+console.log('by day', JSON.stringify(q("SELECT date(created_at/1000,'unixepoch','localtime') d, COUNT(*) n FROM memories GROUP BY d ORDER BY d DESC LIMIT 10")));
+console.log('tags', JSON.stringify(q("SELECT tags, COUNT(*) n FROM memories WHERE tags != '' GROUP BY tags ORDER BY n DESC LIMIT 12")));
+console.log('messages total', q('SELECT COUNT(*) n FROM messages')[0].n);
+console.log('convos', JSON.stringify(q('SELECT conversation_id, COUNT(*) n FROM messages GROUP BY conversation_id ORDER BY n DESC LIMIT 6')));
+console.log('msgs spanning', JSON.stringify(q("SELECT MIN(date(created_at/1000,'unixepoch','localtime')) a, MAX(date(created_at/1000,'unixepoch','localtime')) b FROM messages")[0]));
+console.log('bonds', JSON.stringify(q('SELECT user_id, name, score, mood, wish FROM bonds')));

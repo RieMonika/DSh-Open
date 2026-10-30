@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' data: file:; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+  <title>DSh Open</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="shell">
+    <!-- 自绘标题栏（可拖动窗口） -->
+    <header class="titlebar">
+      <img class="titlebar-logo" src="../assets/app-icon.png" alt="" />
+      <span class="titlebar-title">DSh Open</span>
+      <span class="titlebar-sub" data-i18n="app.subtitle">多平台消息客户端</span>
+    </header>
+
+    <div class="app">
+      <!-- 左侧导航：由注册表动态生成 -->
+      <aside class="sidebar">
+        <div class="brand">
+          <img class="brand-icon" src="../assets/app-icon.png" alt="DSh Open" />
+          <div class="brand-text">
+            <div class="brand-name">DSh Open</div>
+            <div class="brand-ver" id="brandVersion">加载中…</div>
+          </div>
+        </div>
+
+        <nav class="nav" id="nav"></nav>
+
+        <div class="sidebar-foot">
+          <span class="dot dot-ok"></span>
+          <span id="sideStatus">内核就绪</span>
+        </div>
+      </aside>
+
+      <!-- 右侧内容 -->
+      <main class="main">
+        <header class="topbar">
+          <div class="topbar-title">
+            <div class="title-row">
+              <h1 id="pageTitle">总览</h1>
+              <div class="page-actions" id="pageActions"></div>
+            </div>
+            <p id="pageSub"></p>
+          </div>
+        </header>
+
+        <div id="pageBody"></div>
+      </main>
+    </div>
+
+    <!-- 右下角齿轮：设置入口（不进侧栏） -->
+    <button class="corner-btn" id="cornerSettings" type="button" title="设置" aria-label="设置">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path fill="currentColor" d="M19.14 12.94a7.6 7.6 0 0 0 .05-.94 7.6 7.6 0 0 0-.05-.94l2.03-1.58a.5.5 0 0 0 .12-.63l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.1 7.1 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.49.42l-.36 2.54c-.58.24-1.12.55-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.9 8.85a.5.5 0 0 0 .12.63l2.03 1.58c-.03.31-.05.62-.05.94s.02.63.05.94l-2.03 1.58a.5.5 0 0 0-.12.63l1.92 3.32c.13.22.39.3.6.22l2.39-.96c.5.39 1.05.7 1.63.94l.36 2.54c.04.24.25.42.49.42h3.84c.25 0 .46-.18.5-.42l.36-2.54c.58-.24 1.12-.55 1.62-.94l2.39.96c.22.09.47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.63l-2.03-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Z"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <script src="i18n.js"></script>
+  <script src="en.js"></script>
+  <script src="en-extra.js"></script>
+  <script src="en-extra2.js"></script>
+  <script src="en-extra3.js"></script>
+  <script src="en-extra4.js"></script>
+  <script src="en-extra5.js"></script>
+  <script src="en-extra6.js"></script>
+  <script src="en-extra7.js"></script>
+  <script src="en-extra8.js"></script>
+  <script src="pages/dashboard.js"></script>
+  <script src="pages/inbox.js"></script>
+  <script src="pages/chat.js"></script>
+  <script src="pages/memory.js"></script>
+  <script src="pages/pet.js"></script>
+  <script src="pages/channels.js"></script>
+  <script src="pages/growth.js"></script>
+  <script src="pages/model.js"></script>
+  <script src="pages/stickers.js"></script>
+  <script src="pages/abilities.js"></script>
+  <script src="pages/plugins.js"></script>
+  <script src="pages/tutorial.js"></script>
+  <script src="pages/admin.js"></script>
+  <script src="pages/settings.js"></script>
+  <script src="plugin-ui.js"></script>
+  <script src="channel-tabs.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
