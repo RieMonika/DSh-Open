@@ -18,7 +18,15 @@ function root() {
   return path.join(P.root, 'pet-native');
 }
 function assetDir() {
-  return path.join(root(), 'assets', 'webm');
+  // 开发目录里有 pet-native\assets\webm（原版 106 个动作）；
+  // 便携版/安装版只带 app\assets\pet 里那几张兜底素材，没有就走它。
+  const native = path.join(root(), 'assets', 'webm');
+  try {
+    if (fs.existsSync(native)) return native;
+  } catch (_) {
+    /* 忽略 */
+  }
+  return path.join(path.dirname(__dirname), 'assets', 'pet');
 }
 function cfg() {
   const p = settings.getIn('pet') || {};
