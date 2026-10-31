@@ -2,12 +2,12 @@
 // 通道页：把 section 按「通用 / QQ / B站」三大模块分开（只改 display，不挪 DOM）
 (function () {
   const RULES = [
-    [/她自己的\s*QQ/i, 'qq'],
-    [/她自己的\s*B\s*站/i, 'bili'],
-    [/收到的私信/, 'bili'],
-    [/^B\s*站/, 'bili'],
-    [/只和谁互动/, 'qq'],
-    [/^QQ/i, 'qq'],
+    [/她自己的\s*QQ|her own QQ/i, 'qq'],
+    [/她自己的\s*B\s*站|her own Bilibili/i, 'bili'],
+    [/收到的私信|direct messages?/i, 'bili'],
+    [/^B\s*站|^Bilibili/i, 'bili'],
+    [/只和谁互动|who talks to whom|who she talks to/i, 'qq'],
+    [/^QQ\b/i, 'qq'],
   ];
   const TABS = [
     { key: 'general', label: '通用', labelEn: 'General' },
@@ -19,16 +19,17 @@
   let cur = 'general';
   let host = null;
   let bar = null;
-  const owner = new WeakMap();
+  const ownerCache = new Map();
 
   function norm(s) { return String(s || '').replace(/\s+/g, '').trim(); }
   function ownerOf(sec) {
-    if (owner.has(sec)) return owner.get(sec);
     const title = sec.querySelector('.section-title');
-    const t = norm(title ? title.textContent : '');
+    // 规则要对着带空格的标题匹配（英文按词写），所以这里只把连续空白压成一个空格，不整体去掉。
+    const t = String(title ? title.textContent : '').replace(/\s+/g, ' ').trim();
+    if (ownerCache.has(t)) return ownerCache.get(t);
     let k = 'general';
     for (const [re, v] of RULES) { if (re.test(t)) { k = v; break; } }
-    owner.set(sec, k);
+    ownerCache.set(t, k);
     return k;
   }
   function sections() {

@@ -1,7 +1,7 @@
 {
     "name":  "dsh-open",
     "productName":  "DSh Open",
-    "version": "0.29.25",
+    "version": "0.29.26",
     "description":  "DSh Open — 多平台消息客户端（本机）",
     "main":  "main.js",
     "private":  true,
