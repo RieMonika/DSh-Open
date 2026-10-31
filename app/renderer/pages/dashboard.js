@@ -69,11 +69,12 @@
       }, 6000);
 
       const applyState = (st) => {
+        const en = !!(window.I18N && window.I18N.get() === 'en-US');
         const bits = [];
-        bits.push(st.qq.status === 'online' ? 'QQ ' + (st.qq.selfName || '已连接') : 'QQ 没连');
-        bits.push(st.bili.logged ? 'B 站 已登录' : 'B 站 没登录');
-        bits.push(st.chat.autoreply ? '自动回复 开' : '自动回复 关');
-        bits.push(st.chat.proactive ? '主动聊天 开' : '主动聊天 关');
+        bits.push(st.qq.status === 'online' ? 'QQ ' + (st.qq.selfName || (en ? 'connected' : '已连接')) : (en ? 'QQ offline' : 'QQ 没连'));
+        bits.push(st.bili.logged ? (en ? 'Bilibili signed in' : 'B 站 已登录') : (en ? 'Bilibili not signed in' : 'B 站 没登录'));
+        bits.push(st.chat.autoreply ? (en ? 'Auto reply on' : '自动回复 开') : (en ? 'Auto reply off' : '自动回复 关'));
+        bits.push(st.chat.proactive ? (en ? 'Proactive on' : '主动聊天 开') : (en ? 'Proactive off' : '主动聊天 关'));
         statusLine.textContent = SP.join(bits, SP.g3);
         renderSteps(st.steps || [], st);
 
@@ -82,7 +83,7 @@
         if (closing) {
           // 关闭动作进行中：只显示进度，不显示成「已关闭」的死状态
           bootBtn.disabled = true;
-          bootBtn.textContent = '正在关闭…';
+          bootBtn.textContent = en ? 'Stopping…' : '正在关闭…';
           bootBtn.classList.add('is-running');
         } else if (st.running) {
           bootBtn.disabled = true;
@@ -93,14 +94,14 @@
           bootBtn.disabled = false;
           bootBtn.textContent = t('dash.boot');
           bootBtn.classList.add('is-paused');
-          statusLine.textContent = '已全部关闭' + SP.g3 + '点一下就能重新打开';
+          statusLine.textContent = (en ? 'Everything is off' : '已全部关闭') + SP.g3 + (en ? 'tap to start it all again' : '点一下就能重新打开');
         } else if (st.ok) {
           bootBtn.disabled = false;
-          bootBtn.textContent = '全部在线';
+          bootBtn.textContent = en ? 'All online' : '全部在线';
           bootBtn.classList.add('is-done');
         } else if ((st.steps || []).length) {
           bootBtn.disabled = false;
-          bootBtn.textContent = '重新启动';
+          bootBtn.textContent = en ? 'Restart' : '重新启动';
         } else {
           bootBtn.disabled = false;
           bootBtn.textContent = t('dash.boot');
@@ -110,7 +111,7 @@
           const n = (st.qq.status === 'online' ? 1 : 0) + (st.bili.logged ? 1 : 0);
           chanCard.textContent = String(n);
           const sub = document.querySelector('[data-stat="channels"] .stat-note');
-          if (sub) sub.textContent = n === 2 ? '已连上：QQ / B 站' : n === 1 ? (st.qq.status === 'online' ? '已连上：QQ' : '已连上：B 站') : '都还没连上';
+          if (sub) sub.textContent = n === 2 ? (en ? 'Connected: QQ / Bilibili' : '已连上：QQ / B 站') : n === 1 ? (st.qq.status === 'online' ? (en ? 'Connected: QQ' : '已连上：QQ') : (en ? 'Connected: Bilibili' : '已连上：B 站')) : (en ? 'Nothing connected yet' : '都还没连上');
         }
       };
 

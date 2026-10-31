@@ -179,7 +179,16 @@ async function describe(input, opts) {
     const ms = Date.now() - startedAt;
 
     if (!res.ok || !json) {
-      const msg = (json && (json.error && (json.error.message || json.error)) ) || text.slice(0, 200) || 'HTTP ' + res.status;
+      const raw =
+        (json && json.error && (json.error.message || json.error)) ||
+        (json && (json.message || json.code)) ||
+        text.slice(0, 200) ||
+        'HTTP ' + res.status;
+      let msg = String(raw);
+      const code = json && Number(json.code);
+      if (code && ERROR_HINTS[code]) msg = ERROR_HINTS[code] + '（服务商原话：' + String(raw) + '）';
+      else if (res.status === 401) msg = '密钥不对，或这条密钥没有权限（HTTP 401）';
+      else if (res.status === 402 || res.status === 403) msg = '账号被拒绝：余额不足、没实名、或这个模型没开通（HTTP ' + res.status + '）';
       logUsage({ baseUrl: c.baseUrl, model: c.model, ms, ok: false, error: msg });
       return { ok: false, text: '', prompt: 0, completion: 0, error: String(msg) };
     }
@@ -251,9 +260,20 @@ function stats() {
   };
 }
 
-/** 1x1 红色 PNG，用来试连通性 */
+/**
+ * 64x64 纯红 PNG，用来试连通性。
+ * 不能用 1x1：硅基流动的 Qwen3-VL 会直接报「height(1) or width(1) must be larger than 28」。
+ */
 const PIXEL =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAACLSURBVHhe7dAhAQBADIDAJVn/UN9l76kA4gySebtnNgw2DWCwaQCDTQMYbBrAYNMABpsGMNg0gMGmAQw2DWCwaQCDTQMYbBrAYNMABpsGMNg0gMGmAQw2DWCwaQCDTQMYbBrAYNMABpsGMNg0gMGmAQw2DWCwaQCDTQMYbBrAYNMABpsGMNg0gMHmA+xncfBUukEyAAAAAElFTkSuQmCC';
+
+/** 常见服务商的错误码 → 人话（原样返回的内容仍附在后面，方便排查） */
+const ERROR_HINTS = {
+  30001: '账号余额不足，免费额度用完了 —— 充值，或者换一家视觉服务（比如智谱的 glm-4v-flash）',
+  30003: '这个模型在你的账号里没有开通，或已经下线了 —— 换一个模型名再试',
+  20015: '图片太小了：宽高都要大于 28 像素',
+  20012: '模型名写错了，或者这家服务没有这个模型',
+};
 
 async function test(prompt) {
   const c = cfg();

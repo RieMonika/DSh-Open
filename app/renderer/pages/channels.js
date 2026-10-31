@@ -419,44 +419,56 @@
       const VPROV = {
         siliconflow: {
           label: '硅基流动 SiliconFlow',
+          labelEn: 'SiliconFlow',
           baseUrl: 'https://api.siliconflow.cn/v1',
           models: [
-            'Qwen/Qwen2.5-VL-72B-Instruct',
-            'Qwen/Qwen2.5-VL-32B-Instruct',
-            'Qwen/Qwen2-VL-72B-Instruct',
+            'Qwen/Qwen3-VL-32B-Instruct',
+            'Qwen/Qwen3-VL-8B-Instruct',
+            'Qwen/Qwen3-VL-30B-A3B-Instruct',
           ],
           keyHint: '控制台 → API 密钥，形如 sk-…',
         },
         zhipu: {
           label: '智谱 GLM（GLM-4V）',
+          labelEn: 'Zhipu GLM (GLM-4V)',
           baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
           models: ['glm-4v-flash', 'glm-4v-plus', 'glm-4v'],
           keyHint: 'API Keys 页面，形如 xxxx.yyyy',
         },
         dashscope: {
           label: '通义千问（DashScope）',
+          labelEn: 'Qwen (DashScope)',
           baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
           models: ['qwen-vl-max', 'qwen-vl-plus', 'qwen2.5-vl-72b-instruct'],
           keyHint: '百炼控制台 → API-KEY，形如 sk-…',
         },
         moonshot: {
           label: '月之暗面 Moonshot',
+          labelEn: 'Moonshot',
           baseUrl: 'https://api.moonshot.cn/v1',
           models: ['moonshot-v1-8k-vision-preview', 'moonshot-v1-32k-vision-preview'],
           keyHint: '控制台 → API Key，形如 sk-…',
         },
         openai: {
           label: 'OpenAI',
+          labelEn: 'OpenAI',
           baseUrl: 'https://api.openai.com/v1',
           models: ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1-mini'],
           keyHint: 'platform.openai.com → API keys',
         },
         custom: {
           label: '自定义（任何 OpenAI 兼容接口）',
+          labelEn: 'Custom (any OpenAI-compatible API)',
           baseUrl: '',
           models: [],
           keyHint: '按你自己服务的要求填',
         },
+      };
+      const enUi = () => !!(window.I18N && window.I18N.get() === 'en-US');
+      const vlabel = (k) => {
+        const p = VPROV[k];
+        if (!p) return enUi() ? 'Custom' : '自定义';
+        return enUi() && p.labelEn ? p.labelEn : p.label;
       };
 
       const vrowV = (title, desc, ctrl, stack) =>
@@ -478,8 +490,7 @@
       const vProv = h(
         'select',
         { class: 'input', style: 'width: 300px;' },
-        ...Object.keys(VPROV).map((k) => h('option', { value: k, text: VPROV[k].label })),
-      );
+        ...Object.keys(VPROV).map((k) => h('option', { value: k, text: vlabel(k) })),      );
       // 老配置里没有 provider 字段：配过 key / 模型就按地址反推，没配过就默认给个能直接用的预设
       const guessProvider = () => {
         if (VPROV[vis.provider]) return vis.provider;
@@ -504,7 +515,7 @@
       const vModelSel = h('select', { class: 'input', style: 'width: 320px;' });
       const vModel = h('input', {
         class: 'input input-wide',
-        placeholder: '模型名，例如 Qwen/Qwen2.5-VL-72B-Instruct',
+        placeholder: '模型名，例如 Qwen/Qwen3-VL-32B-Instruct',
         value: '',
         autocomplete: 'off',
       });
@@ -531,7 +542,9 @@
         visBadge.textContent = ok ? '已配置' : '未配置';
         if (ok) {
           visState.textContent =
-            '已配置：' + (VPROV[c.provider] ? VPROV[c.provider].label : '自定义') + ' · ' + c.model + '（发图' + (c.enabled ? '开着' : '关着') + '）';
+            enUi()
+          ? 'Configured: ' + vlabel(c.provider) + ' · ' + c.model + ' (image input ' + (c.enabled ? 'on' : 'off') + ')'
+          : '已配置：' + vlabel(c.provider) + ' · ' + c.model + '（发图' + (c.enabled ? '开着' : '关着') + '）';
         } else {
           visState.textContent = '还没配置：选一家、填上密钥就行。';
         }
@@ -761,8 +774,9 @@
         vBadge.className = 'badge' + (ok ? ' badge-ok' : '');
         vBadge.textContent = ok ? '已配置' : '未配置';
         if (ok) {
-          vState.textContent =
-            '已配置：' + (v.provider === 'doubao' ? '豆包 · ' + v.voiceType : v.model) + '（' + (v.enabled ? '发语音开着' : '但「允许发语音」关着') + '）';
+          vState.textContent = enUi()
+            ? 'Configured: ' + (v.provider === 'doubao' ? 'Doubao · ' + v.voiceType : v.model) + ' (' + (v.enabled ? 'voice on' : 'voice off — “allow voice” is still off') + ')'
+            : '已配置：' + (v.provider === 'doubao' ? '豆包 · ' + v.voiceType : v.model) + '（' + (v.enabled ? '发语音开着' : '但「允许发语音」关着') + '）';
         } else {
           vState.textContent =
             v.provider === 'doubao'
