@@ -18,9 +18,9 @@
  *   看看资料
  */
 
+const { parseNickname } = require('./name');
+
 const CMDS = [
-  { key: 'nickname', re: /^(?:帮我|帮忙|给我)?\s*(?:把)?(?:名字|昵称)?\s*(?:改|改一下|改成|换成|换|设为|设置成)(?:名字|昵称)?\s*(?:为|成)?\s*[:：]?\s*([\s\S]+)$/, label: '改昵称' },
-  { key: 'nickname', re: /^(?:改|换)(?:名|昵称)\s*[:：]?\s*([\s\S]+)$/, label: '改昵称' },
   { key: 'sign', re: /^(?:帮我|帮忙|给我)?\s*(?:把)?(?:签名|简介|个签|个性签名)\s*(?:改|改成|换成|设为|设置成)\s*(?:为|成)?\s*[:：]?\s*([\s\S]+)$/, label: '改签名' },
   { key: 'sign', re: /^改(?:签名|简介|个签)\s*[:：]?\s*([\s\S]+)$/, label: '改签名' },
   { key: 'avatar', re: /^(?:帮我|帮忙|给我)?\s*(?:换|改|换一下)(?:个头像|头像)\s*(?:成|为)?\s*[:：]?\s*([\s\S]+)$/, label: '换头像' },
@@ -79,7 +79,7 @@ async function run(cmd, arg, userId) {
       ok: true,
       message: [
         '我能做的：',
-        '· 改名字：说「名字改成鲸鱼娘」或「改名 鲸鱼娘」',
+        '· 改名字：说「改个名字，叫鲸鱼娘」「名字改成鲸鱼娘」「改名 鲸鱼娘」都行',
         '· 改签名：说「签名改成 今天也在努力」',
         '· 换头像：说「换头像 C:\\图片\\某个.gif」（给本机完整路径）',
         '· 发说说：说「发说说 今天天气不错」',
@@ -239,6 +239,17 @@ module.exports = {
         ctx.log.info(lastResult);
         await say(userId, r.message);
         return true; // 这条我处理了
+      }
+
+      // 改名字放最后：「改个名字，叫 X」「帮我把昵称换成 X」这类说法交给 name.js 慢慢剥
+      const nickName = parseNickname(body);
+      if (nickName) {
+        event.__handled = true;
+        const r = await run('nickname', nickName, userId);
+        lastResult = (r.ok ? '✅ ' : '❌ ') + '改昵称：' + r.message;
+        ctx.log.info(lastResult);
+        await say(userId, r.message);
+        return true;
       }
       return false;
     });
