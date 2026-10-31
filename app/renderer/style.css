@@ -1,4 +1,4 @@
-/* ============================================================================
+﻿/* ============================================================================
    DSh Open — 样式
    所有颜色/圆角/间距集中在这里的变量里，改外观优先改变量，别到处改数值。
    ========================================================================= */
@@ -1488,3 +1488,34 @@ main.main { padding: 26px 30px 34px; }
 .tut-faq-row { border: 1px solid var(--line-soft); border-radius: 9px; padding: 9px 12px; background: rgba(255, 255, 255, .02); }
 .tut-faq-q { font-size: 12.5px; font-weight: 600; color: var(--text); }
 .tut-faq-a { font-size: 12.5px; line-height: 1.75; color: var(--text-faint); margin-top: 4px; }
+/* ---- 教程页 v2：三条路 + 最坏情况 ---- */
+.tut-paths { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+.tut-path { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; background: rgba(255, 255, 255, .02); }
+.tut-path.is-done { border-color: var(--ok-line); background: linear-gradient(180deg, rgba(53, 208, 127, .10), rgba(53, 208, 127, .02)); }
+.tut-path-head { display: flex; align-items: flex-start; gap: 10px; }
+.tut-path-key { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; color: #cfe0ff; background: rgba(109, 134, 255, .18); border: 1px solid var(--accent-line); }
+.tut-path.is-done .tut-path-key { color: #8ef0bb; background: rgba(53, 208, 127, .14); border-color: var(--ok-line); }
+.tut-path-main { min-width: 0; }
+.tut-path-title { font-size: 13.5px; font-weight: 600; line-height: 1.5; }
+.tut-path-desc { font-size: 12px; color: var(--text-dim); line-height: 1.72; margin-top: 6px; }
+.tut-path-note { font-size: 11.5px; color: var(--text-faint); line-height: 1.7; margin-top: auto; padding-top: 10px; }
+.tut-path-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.tut-path-alt { opacity: .82; }
+
+.tut-worst { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.tut-worst-row { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.6fr) minmax(0, 1fr); gap: 14px; padding: 12px 14px; border: 1px solid var(--line-soft); border-radius: 10px; background: rgba(255, 255, 255, .02); }
+.tut-worst-row:hover { border-color: var(--line); background: rgba(255, 255, 255, .035); }
+.tut-worst-what { font-size: 12.5px; font-weight: 600; line-height: 1.7; color: var(--text); }
+.tut-worst-fix { font-size: 12.5px; line-height: 1.78; color: var(--text-dim); }
+.tut-worst-keep { font-size: 11.5px; line-height: 1.72; color: var(--text-faint); }
+.tut-worst-keep-label { display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: 5px; border: 1px solid var(--accent-line); color: #b9c6ff; background: var(--accent-soft); font-size: 11px; }
+.tut-bullets { margin-top: 8px; }
+
+@media (max-width: 1180px) {
+  .tut-paths { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .tut-paths { grid-template-columns: minmax(0, 1fr); }
+  .tut-worst-row { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .tut-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
