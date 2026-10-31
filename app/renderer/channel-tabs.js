@@ -10,10 +10,12 @@
     [/^QQ/i, 'qq'],
   ];
   const TABS = [
-    { key: 'general', label: '通用' },
-    { key: 'qq', label: 'QQ' },
-    { key: 'bili', label: 'B站' },
+    { key: 'general', label: '通用', labelEn: 'General' },
+    { key: 'qq', label: 'QQ', labelEn: 'QQ' },
+    { key: 'bili', label: 'B站', labelEn: 'Bilibili' },
   ];
+  function isEn() { return !!(window.I18N && window.I18N.get && window.I18N.get() !== 'zh-CN'); }
+  function tabLabel(t) { return isEn() ? (t.labelEn || t.label) : t.label; }
   let cur = 'general';
   let host = null;
   let bar = null;
@@ -44,7 +46,7 @@
         const k = b.dataset.tab;
         b.classList.toggle('is-active', k === cur);
         const n = b.querySelector('.mod-tab-n');
-        if (n) n.textContent = '（' + (count[k] || 0) + '）';
+        if (n) n.textContent = isEn() ? ' (' + (count[k] || 0) + ')' : '（' + (count[k] || 0) + '）';
       });
     }
   }
@@ -56,7 +58,7 @@
       const b = document.createElement('button');
       b.className = 'mod-tab';
       b.dataset.tab = t.key;
-      b.innerHTML = '<span class="mod-tab-t">' + t.label + '</span><span class="mod-tab-n"></span>';
+      b.innerHTML = '<span class="mod-tab-t">' + tabLabel(t) + '</span><span class="mod-tab-n"></span>';
       b.addEventListener('click', () => { cur = t.key; apply(); });
       bar.appendChild(b);
     });
@@ -68,6 +70,9 @@
     host = document.getElementById('pageBody');
     if (!host) return;
     if (location.hash.indexOf('/channels') < 0) { if (bar) { bar.remove(); bar = null; cur = 'general'; } return; }
+    // 点「保存 / 刷新状态」这类按钮后整页会重画（#pageBody 清空再塞新容器），
+    // 分隔条跟着被摘掉；旧引用不丢的话 buildBar() 会以为已经建过，标签就消失了。
+    if (bar && (!bar.isConnected || !host.contains(bar))) bar = null;
     buildBar();
     apply();
   }
@@ -77,6 +82,7 @@
     timer = setTimeout(() => { timer = null; refresh(); }, 60);
   }
   window.addEventListener('hashchange', () => { bar = null; cur = 'general'; setTimeout(refresh, 80); });
+  window.addEventListener('i18n:change', () => { bar = null; setTimeout(refresh, 80); });
   window.addEventListener('DOMContentLoaded', () => {
     const root = document.getElementById('pageBody');
     if (!root) return;
